@@ -29,43 +29,33 @@ for _, row in df.iterrows():
     G.nodes[row['node_1']]['cluster'] = row['cluster number']
     G.nodes[row['node_2']]['cluster'] = row['cluster number']
 
-# Function to get color based on cluster number
-def get_cluster_color(cluster_number):
-    cluster_colors = {
-        1: 'red',
-        2: 'green',
-        # Add more colors if you have more clusters
-    }
-    return cluster_colors.get(cluster_number, 'black')  # Default to black if no cluster found
-
 # Create a Pyvis network
 net = Network(notebook=True)
 
 # Add nodes and edges from the NetworkX graph to the Pyvis network
 for node, data in G.nodes(data=True):
-    net.add_node(node, label=node, color=get_cluster_color(data['cluster']))
+    net.add_node(node, label=node, color='grey')
 
 for source, target, data in G.edges(data=True):
-    net.add_edge(source, target, value=data['weight'])
-
-# Function to get updated or grey color
-def get_updated_or_grey_color(node, original_clusters):
-    return get_cluster_color(original_clusters.get(node, None)) if node in original_clusters else 'grey'
+    net.add_edge(source, target, value=data['weight'], color='grey')
 
 # Add new nodes and edges from the new DataFrame
-original_clusters = nx.get_node_attributes(G, 'cluster')
-
 for _, row in new_df.iterrows():
     G.add_edge(row['node_1'], row['node_2'], weight=row['edge'])
-    G.nodes[row['node_1']]['cluster'] = row['cluster number']
-    G.nodes[row['node_2']]['cluster'] = row['cluster number']
+    G.nodes[row['node_1']]['color'] = 'red'
+    G.nodes[row['node_2']]['color'] = 'red'
 
 # Update the Pyvis network with the new nodes and edges
 for node, data in G.nodes(data=True):
-    net.add_node(node, label=node, color=get_updated_or_grey_color(node, original_clusters))
+    color = data.get('color', 'grey')
+    net.add_node(node, label=node, color=color)
 
 for source, target, data in G.edges(data=True):
-    net.add_edge(source, target, value=data['weight'])
+    if (source, target) in [(row['node_1'], row['node_2']) for _, row in new_df.iterrows()] or \
+       (target, source) in [(row['node_1'], row['node_2']) for _, row in new_df.iterrows()]:
+        net.add_edge(source, target, value=data['weight'], color='red')
+    else:
+        net.add_edge(source, target, value=data['weight'], color='grey')
 
 # Generate the updated HTML file
-net.show('updated_clustered_graph_with_grey.html')
+net.show('updated_clustered_graph_with_red_and_grey.html')
